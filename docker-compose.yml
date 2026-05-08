@@ -1,0 +1,42 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aicf-api
+    env_file: ".env"
+    environment:
+      TTS_BASE_URL: "http://voxcpm:5002"
+    ports:
+      - "${PORT}:${PORT}"
+    volumes:
+      - ./data:/srv/data
+      - ./videos:/srv/videos
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:${PORT}/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  voxcpm:
+    build:
+      context: ./voxcpm-service
+      dockerfile: Dockerfile
+    container_name: aicf-voxcpm
+    ports:
+      - "${TTS_PORT}:5002"
+    environment:
+      VOXCPM_MODEL_DIR: "${VOXCPM_MODEL_DIR:-/models/VoxCPM2}"
+      VOXCPM_DEFAULT_EMOTION: "${VOXCPM_DEFAULT_EMOTION:-neutral}"
+      VOXCPM_DEFAULT_SPEED: "${VOXCPM_DEFAULT_SPEED:-1.0}"
+      VOXCPM_DEFAULT_PITCH: "${VOXCPM_DEFAULT_PITCH:-1.0}"
+      VOXCPM_HUMANIZE: "${VOXCPM_HUMANIZE:-true}"
+    volumes:
+      - voxcpm_models:/models
+    restart: unless-stopped
+
+volumes:
+  voxcpm_models:

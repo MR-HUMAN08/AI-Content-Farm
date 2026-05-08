@@ -1,0 +1,277 @@
+# Project Status Report
+
+## 1. Project Structure
+- .: Project root directory for AI Content Farm.
+- ./.dockerignore: Docker build context ignore rules.
+- ./.env: Active environment variable configuration.
+- ./.env.example: Template environment variable file.
+- ./.gitignore: Git ignore rules for this project tree.
+- ./Dockerfile: Container build instructions for Go API.
+- ./LICENSE: Project license text.
+- ./Makefile: Shortcut commands for build/dev tasks.
+- ./PROJECT_STATUS.md: Generated project status report.
+- ./README.md: Main project overview and setup instructions.
+- ./api: Previously built Go API executable binary.
+- ./cmd: Go command entrypoint directory.
+- ./cmd/api: Go API executable package.
+- ./cmd/api/main.go: Go program entrypoint and dependency wiring.
+- ./configs: Project configuration/spec documentation directory.
+- ./configs/cleanroom-spec.md: Specification for clean-room process/context.
+- ./configs/provenance-log.md: Provenance and changes log.
+- ./data: Runtime/local data storage directory.
+- ./data/app.db: SQLite database used by the app.
+- ./docker-compose.yml: Compose services definition.
+- ./go.mod: Go module declaration and dependencies.
+- ./go.sum: Go dependency checksums.
+- ./go1.22.3.linux-amd64.tar.gz: Downloaded Go toolchain archive.
+- ./internal: Main private Go application packages.
+- ./internal/autopilot: Autopilot scheduling and automation logic.
+- ./internal/autopilot/service.go: Autopilot scheduling and job-trigger service implementation.
+- ./internal/config: Environment/config loading and validation.
+- ./internal/config/config.go: Loads and validates runtime config from environment.
+- ./internal/config/config_test.go: Tests for config defaults/validation.
+- ./internal/httpserver: HTTP API and web server handlers.
+- ./internal/httpserver/helpers.go: HTTP helper utilities for responses and parsing.
+- ./internal/httpserver/server.go: Primary HTTP routes and API handlers.
+- ./internal/httpserver/web: Frontend static assets for web UI.
+- ./internal/httpserver/web.go: Serves embedded/static web frontend assets.
+- ./internal/httpserver/web/app.js: Frontend app behavior and API integration logic.
+- ./internal/httpserver/web/index.html: Web dashboard markup.
+- ./internal/httpserver/web/styles.css: Web dashboard styling.
+- ./internal/httpserver/youtube_import.go: YouTube import/split/compression workflow via FFmpeg.
+- ./internal/job: Job request/response type definitions.
+- ./internal/job/types.go: Job types and payload schema.
+- ./internal/pipeline: End-to-end content generation pipeline runner.
+- ./internal/pipeline/runner.go: Pipeline orchestration for script, audio, and video generation.
+- ./internal/script: LLM script generation logic.
+- ./internal/script/generator.go: Gemini/OpenRouter script generation with fallback logic.
+- ./internal/settings: Persisted runtime settings store.
+- ./internal/settings/store.go: Persistent settings load/save and normalization.
+- ./internal/storage: Storage abstraction and local implementation.
+- ./internal/storage/local.go: Local filesystem storage backend implementation.
+- ./internal/tts: TTS clients, routing, and provider orchestration.
+- ./internal/tts/client.go: TTS client interface and common types.
+- ./internal/tts/compose_manager.go: Docker Compose manager for local TTS service lifecycle.
+- ./internal/tts/context.go: Context-based provider selection helpers.
+- ./internal/tts/elevenlabs.go: ElevenLabs TTS API client implementation.
+- ./internal/tts/router.go: TTS provider router with fallback behavior.
+- ./internal/video: Video assembly and FFmpeg builder logic.
+- ./internal/video/builder.go: FFmpeg video rendering and muxing implementation.
+- ./piper: Legacy local Piper/VoxCPM Flask service files.
+- ./piper/Dockerfile: Container build for local Piper-compatible TTS service.
+- ./piper/app.py: Flask TTS server endpoint implementation.
+- ./test_output.wav: Generated/temporary test audio artifact.
+- ./videos: Source and uploaded input video assets.
+- ./videos/source_1774511532151042117_part_000.mp4: Input source video segment.
+- ./videos/source_1774511532151042117_part_002.mp4: Input source video segment.
+- ./videos/source_1774511532151042117_part_004.mp4: Input source video segment.
+- ./videos/source_1774511532151042117_part_006.mp4: Input source video segment.
+- ./videos/uploads: Uploaded video bucket directory.
+- ./videos/uploads/nature: Sample uploaded nature video segments.
+- ./videos/uploads/nature/source_1775063856350335437_part_000.mp4: Uploaded nature video segment.
+- ./videos/uploads/nature/source_1775063856350335437_part_001.mp4: Uploaded nature video segment.
+- ./videos/uploads/nature/source_1775063856350335437_part_002.mp4: Uploaded nature video segment.
+- ./videos/uploads/nature/source_1775063856350335437_part_003.mp4: Uploaded nature video segment.
+- ./voxcpm-service: Standalone VoxCPM Python service repository.
+- ./voxcpm-service/.github: CI/CD metadata for VoxCPM service.
+- ./voxcpm-service/.github/workflows: GitHub Actions workflow definitions.
+- ./voxcpm-service/.github/workflows/publish-to-pypi.yml: CI workflow for publishing VoxCPM package.
+- ./voxcpm-service/.gitignore: Ignore rules for VoxCPM service subproject.
+- ./voxcpm-service/Dockerfile: Container build instructions for VoxCPM service.
+- ./voxcpm-service/LICENSE: VoxCPM service license.
+- ./voxcpm-service/README.md: VoxCPM service documentation (English).
+- ./voxcpm-service/README_zh.md: VoxCPM service documentation (Chinese).
+- ./voxcpm-service/app.py: Current VoxCPM Flask API service entrypoint.
+- ./voxcpm-service/app_old.py: Older VoxCPM service implementation.
+- ./voxcpm-service/assets: Branding and documentation images.
+- ./voxcpm-service/assets/discord-logo.png: Documentation/logo asset.
+- ./voxcpm-service/assets/feishu-group.png: Documentation/logo asset.
+- ./voxcpm-service/assets/feishu-logo.png: Documentation/logo asset.
+- ./voxcpm-service/assets/modelbest_logo.png: Documentation/logo asset.
+- ./voxcpm-service/assets/thuhcsi_logo.png: Documentation/logo asset.
+- ./voxcpm-service/assets/voxcpm_logo.png: Documentation/logo asset.
+- ./voxcpm-service/assets/voxcpm_model.png: Documentation/logo asset.
+- ./voxcpm-service/conf: VoxCPM finetuning configuration sets.
+- ./voxcpm-service/conf/voxcpm_v1: VoxCPM v1 finetune YAML configs.
+- ./voxcpm-service/conf/voxcpm_v1.5: VoxCPM v1.5 finetune YAML configs.
+- ./voxcpm-service/conf/voxcpm_v1.5/voxcpm_finetune_all.yaml: VoxCPM training/finetune YAML config.
+- ./voxcpm-service/conf/voxcpm_v1.5/voxcpm_finetune_lora.yaml: VoxCPM training/finetune YAML config.
+- ./voxcpm-service/conf/voxcpm_v1/voxcpm_finetune_all.yaml: VoxCPM training/finetune YAML config.
+- ./voxcpm-service/conf/voxcpm_v1/voxcpm_finetune_lora.yaml: VoxCPM training/finetune YAML config.
+- ./voxcpm-service/conf/voxcpm_v2: VoxCPM v2 finetune YAML configs.
+- ./voxcpm-service/conf/voxcpm_v2/voxcpm_finetune_all.yaml: VoxCPM training/finetune YAML config.
+- ./voxcpm-service/conf/voxcpm_v2/voxcpm_finetune_lora.yaml: VoxCPM training/finetune YAML config.
+- ./voxcpm-service/examples: Example audio and dataset files.
+- ./voxcpm-service/examples/example.wav: Example audio for inference/testing.
+- ./voxcpm-service/examples/reference_speaker.wav: Reference speaker sample audio.
+- ./voxcpm-service/examples/train_data_example.jsonl: Example training dataset in JSONL format.
+- ./voxcpm-service/lora_ft_webui.py: LoRA finetuning web UI script.
+- ./voxcpm-service/pyproject.toml: Python project metadata and dependencies.
+- ./voxcpm-service/scripts: Utility scripts for inference/training tests.
+- ./voxcpm-service/scripts/test_pick_runtime_dtype.py: VoxCPM script for test/train workflow.
+- ./voxcpm-service/scripts/test_voxcpm_ft_infer.py: VoxCPM script for test/train workflow.
+- ./voxcpm-service/scripts/test_voxcpm_lora_infer.py: VoxCPM script for test/train workflow.
+- ./voxcpm-service/scripts/train_voxcpm_finetune.py: VoxCPM script for test/train workflow.
+- ./voxcpm-service/src: Python package source root.
+- ./voxcpm-service/src/voxcpm: Core VoxCPM Python package.
+- ./voxcpm-service/src/voxcpm/__init__.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/cli.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/core.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/model: Model architecture modules.
+- ./voxcpm-service/src/voxcpm/model/__init__.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/model/utils.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/model/voxcpm.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/model/voxcpm2.py: VoxCPM2 model implementation.
+- ./voxcpm-service/src/voxcpm/modules: Auxiliary neural modules and blocks.
+- ./voxcpm-service/src/voxcpm/modules/__init__.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/modules/audiovae: Audio VAE model components.
+- ./voxcpm-service/src/voxcpm/modules/audiovae/__init__.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/modules/audiovae/audio_vae.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/modules/audiovae/audio_vae_v2.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/modules/layers: Custom layers including LoRA/quantization.
+- ./voxcpm-service/src/voxcpm/modules/layers/__init__.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/modules/layers/lora.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/modules/layers/scalar_quantization_layer.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/modules/locdit: Local DiT diffusion components.
+- ./voxcpm-service/src/voxcpm/modules/locdit/__init__.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/modules/locdit/local_dit.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/modules/locdit/local_dit_v2.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/modules/locdit/unified_cfm.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/modules/locenc: Local encoder components.
+- ./voxcpm-service/src/voxcpm/modules/locenc/__init__.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/modules/locenc/local_encoder.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/modules/minicpm4: MiniCPM4 model support components.
+- ./voxcpm-service/src/voxcpm/modules/minicpm4/__init__.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/modules/minicpm4/cache.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/modules/minicpm4/config.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/modules/minicpm4/model.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/training: Training pipeline modules.
+- ./voxcpm-service/src/voxcpm/training/__init__.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/training/accelerator.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/training/config.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/training/data.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/training/packers.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/training/state.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/training/tracker.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/training/validate.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/utils: Utility helpers for VoxCPM package.
+- ./voxcpm-service/src/voxcpm/utils/text_normalize.py: VoxCPM core package module.
+- ./voxcpm-service/src/voxcpm/zipenhancer.py: VoxCPM core package module.
+- ./voxcpm-service/tests: Unit/integration tests for VoxCPM service.
+- ./voxcpm-service/tests/test_cli.py: VoxCPM test case file.
+- ./voxcpm-service/tests/test_lora_checkpoint_loading.py: VoxCPM test case file.
+- ./voxcpm-service/tests/test_model_utils.py: VoxCPM test case file.
+- ./voxcpm-service/tests/test_validate.py: VoxCPM test case file.
+- ./voxcpm-service/uv.lock: Pinned Python dependencies lockfile.
+
+## 2. Current TTS Setup
+- What is configured now: `TTS_PROVIDER=elevenlabs` in `.env`, and `internal/config/config.go` default is `elevenlabs`.
+- Changes from original Piper setup (observed in this workspace):
+  - default provider changed from `voxcpm` to `elevenlabs` in `internal/config/config.go`
+  - `.env` set to `TTS_PROVIDER=elevenlabs`
+  - ElevenLabs settings present in `.env` (`ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID`, `ELEVENLABS_MODEL_ID`)
+  - router keeps Piper compatibility alias (`piper` -> `voxcpm`)
+- `internal/tts/router.go` verification: provider `elevenlabs` is explicitly routed to ElevenLabs client in synth/list/preview paths, with fallback logic.
+- Current state of `voxcpm-service/`:
+  - full Python service source tree exists
+  - `voxcpm-service/app.py` is present
+  - `voxcpm-service/venv` is present
+
+## 3. Environment Config
+- Variables in `.env` (API-key values masked):
+  - `PORT=8080`
+  - `TTS_PORT=5002`
+  - `STORAGE_DIR=./data`
+  - `DB_PATH=app.db`
+  - `INPUT_VIDEOS_DIR=./videos`
+  - `OUTPUT_VIDEOS_DIR=./data/generated`
+  - `GEMINI_API_KEY=***`
+  - `OPENROUTER_API_KEY=***`
+  - `OPENROUTER_MODEL=google/gemini-2.0-flash-001`
+  - `TTS_PROVIDER=elevenlabs`
+  - `TTS_DOCKER_AUTO_MANAGE=true`
+  - `TTS_DOCKER_SERVICE_NAME=voxcpm`
+  - `TTS_DOCKER_PROJECT_DIR=`
+  - `TTS_BASE_URL=http://localhost:5002`
+  - `TTS_SYNTH_PATH=/synthesize`
+  - `TTS_TIMEOUT_SECONDS=30`
+  - `ELEVENLABS_API_KEY=***`
+  - `ELEVENLABS_BASE_URL=https://api.elevenlabs.io`
+  - `ELEVENLABS_MODEL_ID=eleven_monolingual_v1`
+  - `ELEVENLABS_VOICE_ID=21m00Tcm4TlvDq8ikWAM`
+  - `ELEVENLABS_OUTPUT_FORMAT=mp3_44100_128`
+  - `FFMPEG_BIN=ffmpeg`
+  - `VOXCPM_MODEL_DIR=`
+  - `VOXCPM_DEFAULT_EMOTION=neutral`
+  - `VOXCPM_DEFAULT_SPEED=1.0`
+  - `VOXCPM_DEFAULT_PITCH=1.0`
+  - `VOXCPM_HUMANIZE=true`
+  - `AUTOPILOT_ENABLED=false`
+  - `AUTOPILOT_EVERY_SECONDS=1800`
+  - `AUTOPILOT_TOPIC=`
+  - `AUTOPILOT_PROMPT=Write a high-retention script with a strong hook and punchy ending CTA.`
+  - `AUTOPILOT_VOICE=`
+- Missing required variables:
+  - No immediate config-load required vars missing (`internal/config.Load()` can still load).
+  - Runtime missing/invalid for ElevenLabs generation: `ELEVENLABS_API_KEY` is placeholder (`your_key_here`).
+  - API-backed script generation unavailable unless one key is provided: `GEMINI_API_KEY` or `OPENROUTER_API_KEY`.
+
+## 4. Go Build Status
+- `go version`: FAIL
+  - `zsh:1: command not found: go`
+- `go build -o api .`: FAIL
+  - `zsh:1: command not found: go`
+- Build errors:
+  - `zsh:1: command not found: go`
+
+## 5. VoxCPM Status
+- `voxcpm-service/app.py` present: PASS
+- `voxcpm-service/venv` present: PASS
+- VoxCPM2 model downloaded check (`~/.cache/huggingface/hub/`): PARTIAL
+  - cache size seen: `4.7G` for `models--openbmb--VoxCPM2`
+- Files present in model cache:
+  - `~/.cache/huggingface/hub/models--openbmb--VoxCPM2/.no_exist/bffb3df5a29440629464e5e839f4d214c8714c3d/audiovae.safetensors`
+  - `~/.cache/huggingface/hub/models--openbmb--VoxCPM2/blobs/41a5c2a8dba4058dd1ad73fb898abf5e4f64f0f9`
+  - `~/.cache/huggingface/hub/models--openbmb--VoxCPM2/blobs/6cb95d998835257df3e35094395b696842024163`
+  - `~/.cache/huggingface/hub/models--openbmb--VoxCPM2/blobs/792f1c223ed607f9e508c0a0deb15dd9532483be`
+  - `~/.cache/huggingface/hub/models--openbmb--VoxCPM2/blobs/8619dda6f3eb6d60d0a1bb274820054e46f41699`
+  - `~/.cache/huggingface/hub/models--openbmb--VoxCPM2/blobs/94b5d51e107e0507d4acc976cfdadb64edd6fd06d1f751dadbf2fd1594274bf1`
+  - `~/.cache/huggingface/hub/models--openbmb--VoxCPM2/blobs/a6344aac8c09253b3b630fb776ae94478aa0275b`
+  - `~/.cache/huggingface/hub/models--openbmb--VoxCPM2/blobs/e7d768677298d058fa6ef8b160e3ca4430997fad`
+  - `~/.cache/huggingface/hub/models--openbmb--VoxCPM2/blobs/f7f964cfa9da23653baec6e6f7750719977ad944ed9f95fe52fe3a620506891d`
+  - `~/.cache/huggingface/hub/models--openbmb--VoxCPM2/blobs/fecf4cdae73b57053cac2ad34c67febbe4e4f08b`
+  - `~/.cache/huggingface/hub/models--openbmb--VoxCPM2/refs/main`
+  - `~/.cache/huggingface/hub/models--openbmb--VoxCPM2/snapshots/bffb3df5a29440629464e5e839f4d214c8714c3d/.gitattributes`
+  - `~/.cache/huggingface/hub/models--openbmb--VoxCPM2/snapshots/bffb3df5a29440629464e5e839f4d214c8714c3d/README.md`
+  - `~/.cache/huggingface/hub/models--openbmb--VoxCPM2/snapshots/bffb3df5a29440629464e5e839f4d214c8714c3d/audiovae.pth`
+  - `~/.cache/huggingface/hub/models--openbmb--VoxCPM2/snapshots/bffb3df5a29440629464e5e839f4d214c8714c3d/config.json`
+  - `~/.cache/huggingface/hub/models--openbmb--VoxCPM2/snapshots/bffb3df5a29440629464e5e839f4d214c8714c3d/model.safetensors`
+  - `~/.cache/huggingface/hub/models--openbmb--VoxCPM2/snapshots/bffb3df5a29440629464e5e839f4d214c8714c3d/special_tokens_map.json`
+  - `~/.cache/huggingface/hub/models--openbmb--VoxCPM2/snapshots/bffb3df5a29440629464e5e839f4d214c8714c3d/tokenization_voxcpm2.py`
+  - `~/.cache/huggingface/hub/models--openbmb--VoxCPM2/snapshots/bffb3df5a29440629464e5e839f4d214c8714c3d/tokenizer.json`
+  - `~/.cache/huggingface/hub/models--openbmb--VoxCPM2/snapshots/bffb3df5a29440629464e5e839f4d214c8714c3d/tokenizer_config.json`
+
+## 6. What Works Right Now
+- PASS: `TTS_PROVIDER=elevenlabs` is active in `.env`.
+- PASS: default provider in `internal/config/config.go` is `elevenlabs`.
+- PASS: ElevenLabs routing path exists and is selected for provider `elevenlabs`.
+- PASS: `voxcpm-service/app.py` exists.
+- PASS: `voxcpm-service/venv` exists.
+- PASS: Hugging Face VoxCPM cache path exists.
+- FAIL: `go version` command execution.
+- FAIL: `go build -o api .` command execution.
+
+## 7. What Is Broken
+- Go toolchain unavailable in shell path.
+  - Exact error: `zsh:1: command not found: go`
+- Project cannot be built in current environment.
+  - Exact error: `zsh:1: command not found: go`
+- ElevenLabs key is placeholder, not usable for real TTS requests.
+  - Current value is `your_key_here`.
+
+## 8. Next Steps Needed
+- Make Go available on PATH and verify with `go version`.
+- Re-run `go build -o api .` successfully.
+- Set a valid `ELEVENLABS_API_KEY`.
+- Provide at least one LLM key (`GEMINI_API_KEY` or `OPENROUTER_API_KEY`) for API-backed script generation.
+- Run API, submit a job, and confirm final MP4 output is produced.
