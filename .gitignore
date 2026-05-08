@@ -5,3 +5,22 @@ bin/
 *.out
 .vscode/
 data/
+
+# Go build artifacts
+api
+*.test
+coverage.out
+
+# Python virtualenvs/caches
+.venv/
+.voxcpm-venv/
+venv/
+__pycache__/
+*.pyc
+
+# VoxCPM local env
+voxcpm-service/venv/
+
+# Local media/output artifacts
+test_output.wav
+videos/uploads/
