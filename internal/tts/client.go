@@ -8,6 +8,7 @@ import (
 	"html"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -44,11 +45,27 @@ func NewHTTPClient(baseURL, synthPath string, timeout time.Duration, defaults Vo
 		timeout = 30 * time.Second
 	}
 	return &HTTPClient{
-		baseURL:   strings.TrimRight(baseURL, "/"),
+		baseURL:   normalizeHTTPBaseURL(baseURL),
 		synthPath: synthPath,
 		http:      &http.Client{Timeout: timeout},
 		defaults:  defaults,
 	}
+}
+
+func normalizeHTTPBaseURL(baseURL string) string {
+	trimmed := strings.TrimRight(strings.TrimSpace(baseURL), "/")
+	if trimmed == "" {
+		return ""
+	}
+	parsed, err := url.Parse(trimmed)
+	if err != nil {
+		return trimmed
+	}
+	if strings.EqualFold(parsed.Hostname(), "localhost") {
+		parsed.Host = strings.Replace(parsed.Host, parsed.Hostname(), "127.0.0.1", 1)
+		return strings.TrimRight(parsed.String(), "/")
+	}
+	return trimmed
 }
 
 type synthRequest struct {
@@ -127,14 +144,12 @@ func (c *HTTPClient) synthesizeBytes(ctx context.Context, text, voice, language 
 	}
 
 	jsonURL := c.baseURL + c.synthPath
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, jsonURL, bytes.NewReader(payload))
+	resp, err := c.postAudio(ctx, doer, jsonURL, payload)
 	if err != nil {
-		return nil, fmt.Errorf("build tts request: %w", err)
+		if fallbackURL, ok := localhostFallbackURL(jsonURL); ok {
+			resp, err = c.postAudio(ctx, doer, fallbackURL, payload)
+		}
 	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "audio/wav, application/octet-stream")
-
-	resp, err := doer.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("tts request failed: %w", err)
 	}
@@ -153,6 +168,34 @@ func (c *HTTPClient) synthesizeBytes(ctx context.Context, text, voice, language 
 		return nil, fmt.Errorf("tts response body was empty")
 	}
 	return audioBytes, nil
+}
+
+func (c *HTTPClient) postAudio(ctx context.Context, doer *http.Client, requestURL string, payload []byte) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, requestURL, bytes.NewReader(payload))
+	if err != nil {
+		return nil, fmt.Errorf("build tts request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "audio/wav, application/octet-stream")
+
+	resp, err := doer.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func localhostFallbackURL(rawURL string) (string, bool) {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return "", false
+	}
+	host := strings.ToLower(parsed.Hostname())
+	if host != "localhost" {
+		return "", false
+	}
+	parsed.Host = strings.Replace(parsed.Host, parsed.Hostname(), "127.0.0.1", 1)
+	return parsed.String(), true
 }
 
 func estimatedSynthesisTimeout(text string, base time.Duration) time.Duration {

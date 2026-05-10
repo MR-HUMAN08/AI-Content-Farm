@@ -41,6 +41,8 @@ func normalizeProvider(value string) string {
 		return ProviderAuto
 	case "piper":
 		return ProviderVoxCPM
+	case ProviderVoxCPM:
+		return ProviderVoxCPM
 	default:
 		return ProviderVoxCPM
 	}
