@@ -124,7 +124,7 @@ func main() {
 	runner := pipeline.NewRunner(
 		store,
 		settingsStore,
-		script.NewGeminiOpenRouterGenerator(cfg.GeminiAPIKey, cfg.OpenRouterAPIKey, cfg.OpenRouterModel, 60*time.Second),
+		script.NewGeminiOpenRouterGenerator(cfg.GeminiAPIKey, cfg.GroqAPIKey, cfg.GroqModel, cfg.OpenRouterAPIKey, cfg.OpenRouterModel, 60*time.Second),
 		ttsClient,
 		video.NewFFmpegBuilder(cfg.FFmpegBinaryPath),
 		2,

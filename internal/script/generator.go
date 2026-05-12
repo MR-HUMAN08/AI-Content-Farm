@@ -30,18 +30,25 @@ type GeminiOpenRouterGenerator struct {
 	geminiAPIKey     string
 	openRouterAPIKey string
 	openRouterModel  string
+	groqAPIKey       string
+	groqModel        string
 	http             *http.Client
 }
 
-func NewGeminiOpenRouterGenerator(geminiAPIKey, openRouterAPIKey, openRouterModel string, timeout time.Duration) *GeminiOpenRouterGenerator {
+func NewGeminiOpenRouterGenerator(geminiAPIKey, groqAPIKey, groqModel, openRouterAPIKey, openRouterModel string, timeout time.Duration) *GeminiOpenRouterGenerator {
 	if timeout <= 0 {
 		timeout = 60 * time.Second
 	}
 	if openRouterModel == "" {
 		openRouterModel = "google/gemini-2.0-flash-001"
 	}
+	if groqModel == "" {
+		groqModel = "llama-3.3-70b-versatile"
+	}
 	return &GeminiOpenRouterGenerator{
 		geminiAPIKey:     geminiAPIKey,
+		groqAPIKey:       groqAPIKey,
+		groqModel:        groqModel,
 		openRouterAPIKey: openRouterAPIKey,
 		openRouterModel:  openRouterModel,
 		http:             &http.Client{Timeout: timeout},
@@ -96,7 +103,26 @@ func (g *GeminiOpenRouterGenerator) Generate(ctx context.Context, req job.Reques
 		if err == nil {
 			return content, nil
 		}
-		log.Printf("Gemini request failed, falling back to OpenRouter: %v", err)
+		log.Printf("Gemini request failed, falling back to Groq/OpenRouter: %v", err)
+	}
+
+	// Fall back to Groq
+	if strings.TrimSpace(g.groqAPIKey) != "" {
+		topic := resolveTopic(req)
+		if topic == "" {
+			topic = "Write a clean, engaging faceless short video script."
+		}
+		prompt := buildMultilingualPrompt(topic)
+		result, err := g.generateViaGroq(ctx, prompt)
+		if err == nil {
+			content, parseErr := normalizeGeneratedContent(strings.TrimSpace(result))
+			if parseErr == nil {
+				return content, nil
+			}
+			log.Printf("groq response parse failed: %v", parseErr)
+		} else {
+			log.Printf("groq generation failed: %v", err)
+		}
 	}
 
 	// Fall back to OpenRouter
@@ -111,6 +137,64 @@ func (g *GeminiOpenRouterGenerator) Generate(ctx context.Context, req job.Reques
 
 	// Both APIs unavailable, use fallback
 	return fallbackContent(req), nil
+}
+
+func (g *GeminiOpenRouterGenerator) generateViaGroq(ctx context.Context, prompt string) (string, error) {
+	if g.groqAPIKey == "" {
+		return "", fmt.Errorf("GROQ_API_KEY not set")
+	}
+
+	type message struct {
+		Role    string `json:"role"`
+		Content string `json:"content"`
+	}
+	type requestBody struct {
+		Model    string    `json:"model"`
+		Messages []message `json:"messages"`
+	}
+	type choice struct {
+		Message message `json:"message"`
+	}
+	type responseBody struct {
+		Choices []choice `json:"choices"`
+	}
+
+	body, _ := json.Marshal(requestBody{
+		Model: g.groqModel,
+		Messages: []message{
+			{Role: "user", Content: prompt},
+		},
+	})
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
+		"https://api.groq.com/openai/v1/chat/completions",
+		bytes.NewReader(body))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+g.groqAPIKey)
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("groq error %d: %s", resp.StatusCode, string(b))
+	}
+
+	var result responseBody
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", err
+	}
+	if len(result.Choices) == 0 {
+		return "", fmt.Errorf("groq returned no choices")
+	}
+	return result.Choices[0].Message.Content, nil
 }
 
 func (g *GeminiOpenRouterGenerator) callGemini(ctx context.Context, req job.Request) (GeneratedContent, error) {

@@ -16,6 +16,8 @@ type Config struct {
 	GeminiAPIKey         string
 	OpenRouterAPIKey     string
 	OpenRouterModel      string
+	GroqAPIKey           string
+	GroqModel            string
 	TTSProvider          string
 	TTSDockerAutoManage  bool
 	TTSDockerServiceName string
@@ -50,6 +52,8 @@ func Load() (Config, error) {
 		GeminiAPIKey:         os.Getenv("GEMINI_API_KEY"),
 		OpenRouterAPIKey:     os.Getenv("OPENROUTER_API_KEY"),
 		OpenRouterModel:      envOrDefault("OPENROUTER_MODEL", "google/gemini-2.0-flash-001"),
+		GroqAPIKey:           os.Getenv("GROQ_API_KEY"),
+		GroqModel:            envOrDefault("GROQ_MODEL", "llama-3.3-70b-versatile"),
 		TTSProvider:          envOrDefault("TTS_PROVIDER", "elevenlabs"),
 		TTSDockerAutoManage:  envBoolOrDefault("TTS_DOCKER_AUTO_MANAGE", true),
 		TTSDockerServiceName: envOrDefault("TTS_DOCKER_SERVICE_NAME", "voxcpm"),
